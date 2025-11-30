@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+### Fixes
+
+ - **Update all dependencies - [drager]**
+
+  [drager]: https://github.com/drager
+
 ## 0.4.1
 
 ### Fixes
