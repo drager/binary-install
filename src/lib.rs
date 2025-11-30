@@ -1,7 +1,7 @@
 //! Utilities for finding and installing binaries that we depend on.
 
 use anyhow::{anyhow, bail, Context, Result};
-use fs4::FileExt;
+use fs4::fs_std::FileExt;
 use siphasher::sip::SipHasher13;
 use std::collections::HashSet;
 use std::env;
@@ -118,7 +118,7 @@ impl Cache {
         let destination = self.destination.join(&dirname);
 
         let flock = File::create(self.destination.join(&format!(".{}.lock", dirname)))?;
-        flock.lock_exclusive()?;
+        flock.try_lock_exclusive()?;
 
         if destination.exists() {
             return Ok(Some(Download { root: destination }));
