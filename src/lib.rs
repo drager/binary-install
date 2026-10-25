@@ -1,14 +1,13 @@
 //! Utilities for finding and installing binaries that we depend on.
 
 use anyhow::{anyhow, bail, Context, Result};
-use fs4::fs_std::FileExt;
 use siphasher::sip::SipHasher13;
 use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
-use std::io;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 
 /// Global cache for wasm-pack, currently containing binaries downloaded from
@@ -118,7 +117,7 @@ impl Cache {
         let destination = self.destination.join(&dirname);
 
         let flock = File::create(self.destination.join(&format!(".{}.lock", dirname)))?;
-        flock.try_lock_exclusive()?;
+        flock.try_lock()?;
 
         if destination.exists() {
             return Ok(Some(Download { root: destination }));
@@ -389,27 +388,30 @@ impl Download {
 }
 
 fn download_binary(url: &str) -> Result<Vec<u8>> {
-    let response = ureq::builder()
-        .try_proxy_from_env(true)
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .proxy(ureq::Proxy::try_from_env())
+        .http_status_as_error(false)
         .build()
-        .get(url)
-        .call()?;
+        .into();
+    let response = agent.get(url).call()?;
 
     let status_code = response.status();
 
-    if (200..300).contains(&status_code) {
+    if status_code.is_success() {
         // note malicious server might exhaust our memory
         let len: usize = response
-            .header("Content-Length")
+            .headers()
+            .get("Content-Length")
+            .and_then(|s| s.to_str().ok())
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
         let mut bytes: Vec<u8> = Vec::with_capacity(len);
-        response.into_reader().read_to_end(&mut bytes)?;
+        response.into_body().into_reader().read_to_end(&mut bytes)?;
         Ok(bytes)
     } else {
         bail!(
             "received a bad HTTP status code ({}) when requesting {}",
-            status_code,
+            status_code.as_u16(),
             url
         )
     }
