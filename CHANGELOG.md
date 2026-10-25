@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0
+
+### Fixes
+
+ - **Update ureq to 3, zip to 9 and all other dependencies - [drager]**
+
+ - **Remove fs4 in favor of std file locking, requires Rust 1.89 or newer - [drager]**
+
+  [drager]: https://github.com/drager
+
 ## 0.5.0
 
 ### Fixes
