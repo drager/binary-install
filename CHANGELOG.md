@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+### Fixes
+
+ - **Wait for the cache lock instead of failing when another process holds it - [drager]**
+
+  [drager]: https://github.com/drager
+
 ## 0.6.0
 
 ### Fixes
