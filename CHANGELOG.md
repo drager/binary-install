@@ -8,6 +8,8 @@
 
  - **Remove fs4 in favor of std file locking, requires Rust 1.89 or newer - [drager]**
 
+ - **Reject empty or corrupted `.exe` files on Windows again - [drager]**
+
   [drager]: https://github.com/drager
 
 ## 0.5.0

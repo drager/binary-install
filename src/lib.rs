@@ -374,11 +374,28 @@ impl Download {
         if !ret.is_file() {
             bail!("{} binary does not exist", ret.display());
         }
-        if !ret.is_executable() {
+        if !ret.is_executable() || !has_executable_header(&ret) {
             bail!("{} is not executable", ret.display());
         }
 
-        Ok(ret)
+        return Ok(ret);
+
+        // is_executable only checks the extension against PATHEXT on Windows,
+        // so also check for the "MZ" magic bytes every Windows executable
+        // starts with, to catch empty or corrupted downloads.
+        #[cfg(windows)]
+        fn has_executable_header(path: &Path) -> bool {
+            let mut magic = [0; 2];
+            File::open(path)
+                .and_then(|mut file| file.read_exact(&mut magic))
+                .is_ok()
+                && &magic == b"MZ"
+        }
+
+        #[cfg(not(windows))]
+        fn has_executable_header(_path: &Path) -> bool {
+            true
+        }
     }
 
     /// Returns the path to the root
