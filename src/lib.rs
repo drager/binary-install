@@ -117,7 +117,7 @@ impl Cache {
         let destination = self.destination.join(&dirname);
 
         let flock = File::create(self.destination.join(&format!(".{}.lock", dirname)))?;
-        flock.try_lock()?;
+        flock.lock()?;
 
         if destination.exists() {
             return Ok(Some(Download { root: destination }));

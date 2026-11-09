@@ -140,3 +140,44 @@ fn it_joins_path_with_destination() {
 
     assert_eq!(dir.path().join("hello"), cache.join(Path::new("hello")));
 }
+
+#[test]
+fn it_waits_for_lock_held_by_another_download() {
+    use std::fs::{self, File};
+    use std::thread;
+    use std::time::Duration;
+
+    let binary_name = "wasm-pack";
+    let binaries = vec![binary_name];
+    let version = "0.6.0";
+
+    let dir = tempfile::TempDir::new().unwrap();
+    let cache = Cache::at(dir.path());
+
+    // Simulate that another download already finished, but still holds the lock.
+    fs::create_dir_all(dir.path().join(format!("{}-{}", binary_name, version))).unwrap();
+    let flock = File::create(
+        dir.path()
+            .join(format!(".{}-{}.lock", binary_name, version)),
+    )
+    .unwrap();
+    flock.lock().unwrap();
+
+    let holder = thread::spawn(move || {
+        thread::sleep(Duration::from_millis(200));
+        flock.unlock().unwrap();
+    });
+
+    let dl = cache.download_version(
+        true,
+        binary_name,
+        &binaries,
+        "http://localhost:7885/wasm-pack.tar.gz",
+        version,
+    );
+
+    holder.join().unwrap();
+
+    assert!(dl.is_ok());
+    assert!(dl.unwrap().is_some());
+}
